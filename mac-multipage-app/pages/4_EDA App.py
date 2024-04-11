@@ -12,7 +12,7 @@ st.set_page_config(
 init_streamlit_comm()
 
 # Main Header
-st.header("Welcome To My EDA Tool")
+st.header("EDA Tool")
 
 # Sidebar for file upload
 uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type="csv")
