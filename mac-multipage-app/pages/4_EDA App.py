@@ -12,7 +12,7 @@ st.set_page_config(
 init_streamlit_comm()
 
 # Main Header
-st.header("EDA Tool")
+st.title("EDA Tool")
 
 # Sidebar for file upload
 uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type="csv")
@@ -46,7 +46,7 @@ def perform_eda(dataframe):
 # Function to initialize PygWalker with uploaded DataFrame
 @st.cache_resource
 def get_pyg_renderer(dataframe) -> "StreamlitRenderer":
-    return StreamlitRenderer(dataframe, spec="./gw_config.json", debug=False)
+    return StreamlitRenderer(dataframe, spec="./gw_config.json", spec_io_mode="rw")
 
 if uploaded_file is not None:
     dataframe = pd.read_csv(uploaded_file)
@@ -59,4 +59,4 @@ if uploaded_file is not None:
     renderer.render_explore()
 else:
     # If no file is uploaded, prompt the user to upload a CSV file
-    st.title(":point_left: Please upload a CSV file to get started")
+    st.header(":point_left: Please upload a CSV file to get started")
