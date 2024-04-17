@@ -453,7 +453,7 @@ def get_pyg_renderer(dataframe) -> "StreamlitRenderer":
 # After preparing your dataframe and right before the place you want to render PygWalker
 renderer = get_pyg_renderer(df_filtered)  # Assuming df_filtered is your final DataFrame
 renderer.render_explore()
-# ----- A2 -This is working - END -----
+----- A2 -This is working - END -----
 
 # # B2 - This is working - START-----
 # # Display a specific chart in PygWalker
