@@ -15,9 +15,9 @@ import plotly.express as px
 
 st.set_page_config(page_title="SRR Management View", page_icon=":mag_right:", layout="wide")
 
-# Establish communication between PygWalker and Streamlit -- A1 - START --This is working---
-init_streamlit_comm()
-# -- A1 - END --This is working--
+# # Establish communication between PygWalker and Streamlit -- A1 - START --This is working---
+# init_streamlit_comm()
+# # -- A1 - END --This is working--
 
 @st.cache_data(ttl=120, show_spinner=True)
 def load_data(url):
@@ -378,8 +378,10 @@ chart4 = alt.Chart(df_filtered).mark_bar().encode(
 # Display 'Interactions Handled' chart
 with col5:
     st.write(chart4)
-st.subheader('Interaction Count by Requestor')
 
+
+# Filter out rows where "Case Reason" or "Case #" is null (adjust column names as necessary)
+# df_filtered = df.dropna(subset=['Case #', 'Case Reason'])
 
 # Group by "Case Reason" and count "Case #" occurrences
 case_counts = df_filtered.groupby('Case Reason')['Service'].count().reset_index()
@@ -395,7 +397,6 @@ st.plotly_chart(fig)
 
 
 st.subheader('Interaction Count by Requestor')
-
 
 # Display a Dataframe where the rows are the 'Requestor', the columns would be the 'Service', and the values would be the count of each 'Service'
 
@@ -415,7 +416,6 @@ gridOptions = gb.build()
 
 # Display the AgGrid component with the configured options
 AgGrid(pivot_df, gridOptions=gridOptions, update_mode=GridUpdateMode.MODEL_CHANGED, fit_columns_on_grid_load=True)
-
 
 # Creating the Summary Table where it sorts the SME (On It) column by first getting the total average TimeTo: On It and average TimeTo: Attended and then sorting it by the number of Interactions
 # and then by the highest average survey.
@@ -443,17 +443,54 @@ df_sorted.rename(columns={'SME (On It)': 'SME'}, inplace=True)
 st.subheader('SME Summary Table')
 st.dataframe(df_sorted[['SME', 'Avg_On_It', 'Avg_Attended', 'Number_of_Interactions', 'Avg_Survey']].reset_index(drop=True))
 
-st.subheader('Create Visualizations and Explore the Data')
-# ----- A2 -This is working - START-----
-@st.cache_resource
-def get_pyg_renderer(dataframe) -> "StreamlitRenderer":
-    # return StreamlitRenderer(dataframe, spec="./gw_config.json", spec_io_mode = "r")
-    return StreamlitRenderer(dataframe)
 
-# After preparing your dataframe and right before the place you want to render PygWalker
-renderer = get_pyg_renderer(df_filtered)  # Assuming df_filtered is your final DataFrame
-renderer.render_explore()
------ A2 -This is working - END -----
+# Convert the 'Avg_On_It_Sec' and 'Avg_Attended_Sec' columns to minutes
+df_sorted['Avg_On_It_Min'] = df_sorted['Avg_On_It_Sec'] / 60
+df_sorted['Avg_Attended_Min'] = df_sorted['Avg_Attended_Sec'] / 60
+
+
+# Define the Altair chart for Avg_On_It_Min
+chart_on_it = alt.Chart(df_sorted).mark_bar().encode(
+    x=alt.X('SME', title='SME', sort='-y'),
+    y=alt.Y('Avg_On_It_Min:Q', title='Average Time On It (Minutes)'),
+    color=alt.condition(
+        alt.datum.Avg_On_It_Min > 5,
+        alt.value('red'),
+        alt.value('steelblue')
+    ),
+    tooltip=['SME', alt.Tooltip('Avg_On_It_Min:Q', title='Average Time On It (Minutes)')]
+).properties(
+    width=600,
+    height=400,
+    title='Average Time On It by SME'
+)
+
+# Define the Altair chart for Avg_Attended_Min
+chart_attended = alt.Chart(df_sorted).mark_bar().encode(
+    x=alt.X('SME', title='SME', sort='-y'),
+    y=alt.Y('Avg_Attended_Min:Q', title='Average Time Attended (Minutes)'),
+    tooltip=['SME', alt.Tooltip('Avg_Attended_Min:Q', title='Average Time Attended (Minutes)')]
+).properties(
+    width=600,
+    height=400,
+    title='Average Time Attended by SME'
+)
+
+# Display the charts using Altair's interactive renderer
+st.altair_chart(chart_on_it, use_container_width=True)
+st.altair_chart(chart_attended, use_container_width=True)
+
+# st.subheader('Create Your Own Visualization Below')
+# # ----- A2 -This is working - START-----
+# @st.cache_resource
+# def get_pyg_renderer(dataframe) -> "StreamlitRenderer":
+#     # return StreamlitRenderer(dataframe, spec="./gw_config.json", spec_io_mode = "r")
+#     return StreamlitRenderer(dataframe)
+
+# # After preparing your dataframe and right before the place you want to render PygWalker
+# renderer = get_pyg_renderer(df_filtered)  # Assuming df_filtered is your final DataFrame
+# renderer.render_explore()
+# # ----- A2 -This is working - END -----
 
 # # B2 - This is working - START-----
 # # Display a specific chart in PygWalker

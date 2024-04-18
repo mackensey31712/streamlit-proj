@@ -4,7 +4,7 @@ from pygwalker.api.streamlit import StreamlitRenderer, init_streamlit_comm
 
 # Adjust the width of the Streamlit page
 st.set_page_config(
-    page_title="PygWalker in Streamlit",
+    page_title="SRR Anlaytics Tool",
     layout="wide"
 )
 
@@ -14,8 +14,21 @@ init_streamlit_comm()
 # Main Header
 st.title("EDA Tool for Data Analytics 📊")
 st.write("---")
-# Sidebar for file upload
-uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type="csv")
+
+# Function to load data
+@st.cache_data(ttl=120, show_spinner=True)
+def load_data(url):
+    df = pd.read_csv(url)
+    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  # set 'Date Created' as datetime
+    df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)  # Renaming column
+    return df
+
+url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQVnfH-edbXqAXxlCb2FrhxxpsOHJhtqKMYsHWxf5SyLVpAPTSIWQeIGrBAGa16dE4CA59o2wyz59G/pub?gid=0&single=true&output=csv'
+dataframe = load_data(url).copy()
+
+# Display PygWalker interface
+renderer = StreamlitRenderer(dataframe, spec="./gw_config.json", spec_io_mode="rw")
+renderer.render_explore()
 
 # Function to perform EDA
 def perform_eda(dataframe):
@@ -43,12 +56,9 @@ def perform_eda(dataframe):
     unique_values = dataframe.nunique()
     unique_values_df = pd.DataFrame({"Columns": unique_values.index, "Count of Unique Values": unique_values.values})
     unique_values_df.index += 1
-    # unique_values_df = pd.DataFrame(dataframe.nunique(), columns=["Count of Unique Values"])
     st.markdown("***Unique Value Count***")
     st.table(unique_values_df)
-    # st.write("Unique Values in Each Column:", dataframe.nunique())
     
-
     # Get columns with missing values
     null_columns = dataframe.columns[dataframe.isnull().any()].tolist()
     null_counts = dataframe.isnull().sum()
@@ -90,20 +100,8 @@ def perform_eda(dataframe):
     else:
         st.write("No columns with duplicates found.")
 
-# Function to initialize PygWalker with uploaded DataFrame
-@st.cache_resource
-def get_pyg_renderer(dataframe) -> "StreamlitRenderer":
-    return StreamlitRenderer(dataframe, spec="./gw_config.json", spec_io_mode="rw")
-
-if uploaded_file is not None:
-    dataframe = pd.read_csv(uploaded_file)
-
-    # Display EDA
+# Display EDA
+if dataframe is not None:
     perform_eda(dataframe)
-    
-    # Initialize and render PygWalker exploration interface
-    renderer = get_pyg_renderer(dataframe)
-    renderer.render_explore()
 else:
-    # If no file is uploaded, prompt the user to upload a CSV file
-    st.header(":point_left: Please upload a CSV file to get started")
+    st.header("Error Reading Data")
